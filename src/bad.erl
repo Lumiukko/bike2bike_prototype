@@ -1,7 +1,7 @@
 % Bicycle attached device prototype
 
 -module(bad).
--export([start/1, stop/2]).
+-export([start/1, stop/2, ping/2]).
 -import(timer, [apply_interval/4,cancel/1]).
 
 -define(PING_INTERVAL, 5000).
