@@ -2,7 +2,7 @@
 
 -import(bad, [start/1, stop/2]).
 
--export([start/0]).
+-export([start/0, stop/1]).
 
 -define(NUM_BAD, 5).
 
@@ -17,7 +17,7 @@ startBADs(N) when N > 0 ->
     io:format("ENV: Started BAD with ID: ~p~n", [BADID]),
     [{BADID, PingTimer}] ++ startBADs(N-1).
         
-stop() -> undefined.    
+stop(BADList) -> self() ! {stop}.
   
 
 loop(BADList) ->
@@ -26,5 +26,11 @@ loop(BADList) ->
             io:format("ENV: Received Ping from BAD ~p~n", [From]),
             lists:foreach(fun({BADID, PingTimer}) ->
                 BADID ! {From, {ping, Lat, Lang}}
+                end, BADList),
+            loop(BADList);
+        {stop} ->
+            io:format("ENV: Received Stop signal~n"),
+            lists:foreach(fun({BADID, PingTimer}) ->
+                bad:stop(BADID, PingTimer)
                 end, BADList)
     end.
