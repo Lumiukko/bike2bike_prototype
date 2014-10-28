@@ -22,6 +22,7 @@ stop(PID, PingTimer) ->
 	timer:cancel(PingTimer).
 
 ping(ENV, BAD) ->
+	io:format("Timer: Time to ping! Env: ~p BAD: ~p~n",[ENV, BAD]),
 	BAD ! {ENV, time2ping}.
 	
 	
@@ -33,30 +34,37 @@ bad_loop(MPA, {Lat, Long}, BADList) ->
 			reply_ok(From);
 		% informing BAD that it is time to ping for new BADs
 		{ENV, time2ping} ->
+			io:format("BAD ~p: Ping broadcast~n", [self()]),
 			ENV ! {self(), ping, {Lat, Long}},
 			bad_loop(MPA, {Lat, Long}, BADList);
 		% receiving ping acknowledgement by other BAD
 		{From, pingACK, {OtherLat, OtherLong}} ->
+			io:format("BAD ~p: Received ping ACK from ~p~n", [self(),From]),
 			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
 		% receiving ping by other BAD
 		{From, ping, {OtherLat, OtherLong}} ->
+			io:format("BAD ~p: Received ping from ~p~n", [self(), From]),
 			reply(From, {pingACK, {Lat, Long}}),
 			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
 		% bluetooth registration by an MPA, check whether already paired
 		{From, register} ->
 			case MPA of
 				undefined ->
+					io:format("BAD ~p: BAD paired with MPA ~p~n", [self(), From]),
 					reply_ok(From),
 					bad_loop(From, {Lat, Long}, BADList);
 				_else ->
+					io:format("BAD ~p: Pairing with ~p failed: Already paired with MPA ~p~n", [self(), From,MPA]),
 					reply_fail(From)
 			end;
 		% unregistration msg by paired MPA
 		{MPA, unregister} ->
+			io:format("BAD ~p: BAD unpairs from MPA ~p~n", [self(), MPA]),
 			reply_ok(MPA),
 			bad_loop(undefined, {Lat, Long}, BADList);
 		% unregistration msg by unknown MPA, fail
 		{Other, unregister} ->
+			io:format("BAD ~p: BAD unpairing with MPA ~p failed: Unknown MPA~n", [self(), Other]),
 			reply_fail(Other),
 			bad_loop(MPA, {Lat, Long}, BADList)
 	end.
