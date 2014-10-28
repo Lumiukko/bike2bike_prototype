@@ -2,4 +2,4 @@
 
 -compile(export_all).
 
-test() -> undefined.
+test() -> undefined2.
