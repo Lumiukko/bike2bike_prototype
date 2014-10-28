@@ -35,7 +35,7 @@ bad_loop(MPA, {Lat, Long}, BADList) ->
 		% informing BAD that it is time to ping for new BADs
 		{ENV, time2ping} ->
 			io:format("BAD ~p: Ping broadcast~n", [self()]),
-			ENV ! {self(), ping, {Lat, Long}},
+			reply(ENV, {ping, {Lat, Long}}),
 			bad_loop(MPA, {Lat, Long}, BADList);
 		% receiving ping acknowledgement by other BAD
 		{From, pingACK, {OtherLat, OtherLong}} ->

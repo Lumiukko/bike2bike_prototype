@@ -24,10 +24,10 @@ stop(ENVID) -> ENVID ! {stop}.
 
 loop(BADList) ->
     receive
-        {From, {ping, Lat, Lang}} ->
+        {From, {ping, {Lat, Lang}}} ->
             io:format("ENV: Received Ping from BAD ~p~n", [From]),
             lists:foreach(fun({BADID, PingTimer}) ->
-                BADID ! {From, {ping, Lat, Lang}}
+                BADID ! {From, {ping, {Lat, Lang}}}
                 end, BADList),
             loop(BADList);
         {stop} ->
