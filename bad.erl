@@ -10,7 +10,7 @@
 % ENV: environment process ID
 start(ENV) ->
 	% spawning new BAD process
-	BAD = spawn(fun() -> bad_loop({undefined, undefined}, dict:new()) end),
+	BAD = spawn(fun() -> bad_loop(undefined, {undefined, undefined}, dict:new()) end),
 	% setting time to ping
 	{ok,PingTimer} = timer:apply_interval(?PING_INTERVAL, bad, ping, [ENV, BAD]),
 	{BAD,PingTimer}.
@@ -24,7 +24,7 @@ ping(ENV, BAD) ->
 	BAD ! {ENV, time2ping}.
 	
 	
-bad_loop({Lat, Long}, BADList) ->
+bad_loop(MPA, {Lat, Long}, BADList) ->
 	receive
 		% stopping BAD
 		{From, stop} ->
@@ -33,14 +33,31 @@ bad_loop({Lat, Long}, BADList) ->
 		% informing BAD that it is time to ping for new BADs
 		{ENV, time2ping} ->
 			ENV ! {self(), ping, {Lat, Long}},
-			bad_loop({Lat, Long}, BADList);
+			bad_loop(MPA, {Lat, Long}, BADList);
 		% receiving ping acknowledgement by other BAD
 		{From, pingACK, {OtherLat, OtherLong}} ->
-			bad_loop({Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
+			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
 		% receiving ping by other BAD
 		{From, ping, {OtherLat, OtherLong}} ->
 			reply(From, {pingACK, {Lat, Long}}),
-			bad_loop({Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList))
+			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
+		% bluetooth registration by an MPA, check whether already paired
+		{From, register} ->
+			case MPA of
+				undefined ->
+					reply_ok(From),
+					bad_loop(From, {Lat, Long}, BADList);
+				_else ->
+					reply_fail(From)
+			end;
+		% unregistration msg by paired MPA
+		{MPA, unregister} ->
+			reply_ok(MPA),
+			bad_loop(undefined, {Lat, Long}, BADList);
+		% unregistration msg by unknown MPA, fail
+		{Other, unregister} ->
+			reply_fail(Other),
+			bad_loop(MPA, {Lat, Long}, BADList)
 	end.
 			
 			
@@ -59,3 +76,6 @@ reply(To, Msg) ->
 
 reply_ok(From) ->
     reply(From, ok).
+
+reply_fail(From) ->
+    reply(From, fail).
