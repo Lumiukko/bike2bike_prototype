@@ -8,7 +8,13 @@
 % For live system, only export API functions.
 %-export([start/0, stop/1]).
 
--define(NUM_BAD, 5).
+
+%==============================================================================
+% Macros
+%==============================================================================
+
+-define(NUM_BAD, 5).        % Number of BAD processes
+-define(MAX_DIST, 10).      % Maximum Range for Inter BAD Communication in Meters
 
 
 
@@ -33,7 +39,7 @@ init() ->
     receive
         {badlist, BADList} ->
             io:format("ENV: Received BAD List with ~p BAD IDs.~n", [length(BADList)]),
-            loop(BADList)
+            loop(BADList, dict:new())
     end.
 
 
@@ -62,14 +68,23 @@ stop(ENVID) -> ENVID ! {stop}.
 % Main loop of the Environment, receiving BAD pings and Stop signal.
 %==============================================================================
 
-loop(BADList) ->
+loop(BADList, BADLoc) ->
     receive
-        {From, {ping, {Lat, Lang}}} ->
+        {From, {ping, {Lat, Long}}} ->
             io:format("ENV: Received Ping from BAD ~p~n", [From]),
             lists:foreach(fun({BADID, _}) ->
-                BADID ! {From, {ping, {Lat, Lang}}}
+                case dict:is_key(From, BADLoc) of
+                    true ->
+                        {LatNext, LongNext} = dict:fetch(From, BADLoc),
+                        case env:distance(Lat, Long, LatNext, LongNext) < ?MAX_DIST of
+                            true -> BADID ! {From, {ping, {Lat, Long}}};
+                            false -> donothing
+                        end;
+                    false -> donothing
+                end
                 end, BADList),
-            loop(BADList);
+            NewBADLoc = dict:update(From, fun(_) -> {Lat, Long} end, {Lat, Long}, BADLoc),
+            loop(BADList, NewBADLoc);
         {stop} ->
             io:format("ENV: Received Stop signal~n"),
             lists:foreach(fun({BADID, PingTimer}) ->
