@@ -7,9 +7,11 @@
 -define(NUM_BAD, 5).
 
 start() ->
-    io:format("ENV: Started with PID: ~p~n", [self()]),
-    BADList = startBADs(?NUM_BAD), 
-    loop(BADList).
+	BADList = startBADs(?NUM_BAD), 
+	ENVID = spawn(fun() -> loop(BADList) end),
+    io:format("ENV: Started with PID: ~p~n", [ENVID]),
+	ENVID.
+    	
 
 startBADs(0) -> [];
 startBADs(N) when N > 0 ->
@@ -17,7 +19,7 @@ startBADs(N) when N > 0 ->
     io:format("ENV: Started BAD with ID: ~p~n", [BADID]),
     [{BADID, PingTimer}] ++ startBADs(N-1).
         
-stop(BADList) -> self() ! {stop}.
+stop(ENVID) -> ENVID ! {stop}.
   
 
 loop(BADList) ->
