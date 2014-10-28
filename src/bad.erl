@@ -38,11 +38,11 @@ bad_loop(MPA, {Lat, Long}, BADList) ->
 			reply(ENV, {ping, {Lat, Long}}),
 			bad_loop(MPA, {Lat, Long}, BADList);
 		% receiving ping acknowledgement by other BAD
-		{From, pingACK, {OtherLat, OtherLong}} ->
+		{From, {pingACK, {OtherLat, OtherLong}}} ->
 			io:format("BAD ~p: Received ping ACK from ~p~n", [self(),From]),
 			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
 		% receiving ping by other BAD
-		{From, ping, {OtherLat, OtherLong}} ->
+		{From, {ping, {OtherLat, OtherLong}}} ->
 			io:format("BAD ~p: Received ping from ~p~n", [self(), From]),
 			reply(From, {pingACK, {Lat, Long}}),
 			bad_loop(MPA, {Lat, Long}, dict:store(From, {OtherLat, OtherLong}, BADList));
@@ -66,6 +66,9 @@ bad_loop(MPA, {Lat, Long}, BADList) ->
 		{Other, unregister} ->
 			io:format("BAD ~p: BAD unpairing with MPA ~p failed: Unknown MPA~n", [self(), Other]),
 			reply_fail(Other),
+			bad_loop(MPA, {Lat, Long}, BADList);
+		{From, Msg} ->
+			io:format("BAD ~p: Received unknown message from ~p: ~p~n", [self(), From, Msg]),
 			bad_loop(MPA, {Lat, Long}, BADList)
 	end.
 			
