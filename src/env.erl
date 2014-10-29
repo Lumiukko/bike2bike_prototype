@@ -75,14 +75,17 @@ loop(BADList, BADLoc) ->
             lists:foreach(fun({BADID, _}) ->
                 case dict:is_key(From, BADLoc) of
                     true ->
-                        {LatNext, LongNext} = dict:fetch(From, BADLoc),
-                        case env:distance(Lat, Long, LatNext, LongNext) < ?MAX_DIST of
-                            % BAD in range
-                            true -> BADID ! {From, {ping, {Lat, Long}}};
-                            % BAD not in range 
-                            false -> donothing
+                        {LatNext, LongNext} = dict:fetch(BADID, BADLoc),
+                        Dist = env:distance(Lat, Long, LatNext, LongNext),
+                        case Dist < ?MAX_DIST of
+                            true ->             % BAD in range
+                                io:format("BAD ~p in range of ~p (~pm)!~n", [BADID, From, Dist]),
+                                BADID ! {From, {ping, {Lat, Long}}};
+                            false ->            % BAD not in range
+                                io:format("BAD ~p *not* in range of ~p (~pm)!~n", [BADID, From, Dist])
                         end;
-                    false -> donothing % Update happens below
+                    false ->
+                        donothing % Update happens below
                 end
                 end, BADList),
             NewBADLoc = dict:update(From, fun(_) -> {Lat, Long} end, {Lat, Long}, BADLoc),
@@ -119,6 +122,12 @@ distance(LatA, LongA, LatB, LongB) ->
 distUP1_Front_Back() ->
     distance(55.702089, 12.561057, 55.702083, 12.561271).
 
+
+%==============================================================================
+% Fuction to Create Event in a BAD
+%==============================================================================
+runEvent(BADID, EventType) ->
+    BADID ! {event, EventType}.
 
 %==============================================================================
 % Fuction to Run Test Case
