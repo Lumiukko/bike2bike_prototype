@@ -14,7 +14,7 @@
 %==============================================================================
 
 -define(NUM_BAD, 5).        % Number of BAD processes
--define(MAX_DIST, 10).      % Maximum Range for Inter BAD Communication in Meters
+-define(MAX_DIST, 20).      % Maximum Range for Inter BAD Communication in Meters
 
 
 
@@ -25,7 +25,7 @@
 start() ->
     ENVID = spawn(fun() -> init() end),
     io:format("ENV: Started with PID: ~p~n", [ENVID]),
-    BADList = startBADs(?NUM_BAD, ENVID),
+    BADList = testcase(ENVID, tc0()),
     ENVID ! {badlist, BADList},
     ENVID.
 
@@ -119,4 +119,31 @@ distance(LatA, LongA, LatB, LongB) ->
 distUP1_Front_Back() ->
     distance(55.702089, 12.561057, 55.702083, 12.561271).
 
+
+%==============================================================================
+% Fuction to Run Test Case
+%==============================================================================
+
+testcase(ENVID, CoordList) ->
+    % start BADs and get their PIDs in a list
+    Indices = lists:seq(1, length(CoordList)),
+    BADList = startBADs(length(CoordList), ENVID),
+    lists:foreach(fun({Index}) ->
+        BADID = lists:nth(Index, BADList),
+        Coord = lists:nth(Index, CoordList),
+        BADID ! {setloc, Coord}
+    end, Indices).
+    
+
+%==============================================================================
+% CoordList for TestCase0
+%==============================================================================
+tc0() ->
+    [
+        {55.702511, 12.562537},
+        {55.702497, 12.562658},
+        {55.702499, 12.562778},
+        {55.702521, 12.562599},
+        {55.702462, 12.562092}  % out of range for everyone else
+    ].
 
