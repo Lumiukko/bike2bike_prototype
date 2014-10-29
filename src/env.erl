@@ -2,11 +2,7 @@
 
 -import(bad, [start/1, stop/2]).
 
-% For testing purposes, export all.
--compile(export_all).
-
-% For live system, only export API functions.
-%-export([start/0, stop/1]).
+-export([start/0, stop/1, runEvent/2]).
 
 
 %==============================================================================
@@ -26,8 +22,11 @@ start() ->
     ENVID = spawn(fun() -> init() end),
     io:format("ENV: Started with PID: ~p~n", [ENVID]),
     BADList = testcase(ENVID, tc0()),
+    {ChosenBAD, _} = lists:nth(2, BADList),
+    % Send accident signal after 12s (enough time to get acquainted with all BADs)
+    timer:apply_after(12000, env, runEvent, [ChosenBAD, accident]),
     ENVID ! {badlist, BADList},
-    ENVID.
+    {ENVID, BADList}.
 
 
 
@@ -76,7 +75,7 @@ loop(BADList, BADLoc) ->
                 case dict:is_key(From, BADLoc) of
                     true ->
                         {LatNext, LongNext} = dict:fetch(BADID, BADLoc),
-                        Dist = env:distance(Lat, Long, LatNext, LongNext),
+                        Dist = distance(Lat, Long, LatNext, LongNext),
                         case Dist < ?MAX_DIST of
                             true ->             % BAD in range
                                 io:format("BAD ~p in range of ~p (~pm)!~n", [BADID, From, Dist]),
@@ -115,19 +114,12 @@ distance(LatA, LongA, LatB, LongB) ->
 
 
 %==============================================================================
-% Test function for the distance function, calculating the distance between 
-% DIKU (Universitetsparken 1, Copenhagen) Front and Back entrance.
-%==============================================================================
-
-distUP1_Front_Back() ->
-    distance(55.702089, 12.561057, 55.702083, 12.561271).
-
-
-%==============================================================================
 % Fuction to Create Event in a BAD
 %==============================================================================
 runEvent(BADID, EventType) ->
     BADID ! {event, EventType}.
+
+
 
 %==============================================================================
 % Fuction to Run Test Case
@@ -150,6 +142,7 @@ testcase(ENVID, CoordList) ->
 %==============================================================================
 % CoordList for TestCase0
 %==============================================================================
+
 tc0() ->
     [
         {55.702511, 12.562537},
@@ -158,4 +151,5 @@ tc0() ->
         {55.702521, 12.562599},
         {55.702462, 12.562092}  % out of range for everyone else
     ].
+
 
