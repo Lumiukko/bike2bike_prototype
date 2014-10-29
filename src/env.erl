@@ -77,10 +77,12 @@ loop(BADList, BADLoc) ->
                     true ->
                         {LatNext, LongNext} = dict:fetch(From, BADLoc),
                         case env:distance(Lat, Long, LatNext, LongNext) < ?MAX_DIST of
+                            % BAD in range
                             true -> BADID ! {From, {ping, {Lat, Long}}};
+                            % BAD not in range 
                             false -> donothing
                         end;
-                    false -> donothing
+                    false -> donothing % Update happens below
                 end
                 end, BADList),
             NewBADLoc = dict:update(From, fun(_) -> {Lat, Long} end, {Lat, Long}, BADLoc),
