@@ -128,12 +128,15 @@ testcase(ENVID, CoordList) ->
     % start BADs and get their PIDs in a list
     Indices = lists:seq(1, length(CoordList)),
     BADList = startBADs(length(CoordList), ENVID),
-    lists:foreach(fun({Index}) ->
-        BADID = lists:nth(Index, BADList),
+    lists:foreach(fun(Index) ->
+        {BADID, _} = lists:nth(Index, BADList),
         Coord = lists:nth(Index, CoordList),
+        io:format("Started BAD ~p with Coords ~p.~n", [BADID, Coord]),
         BADID ! {setloc, Coord}
-    end, Indices).
-    
+    end, Indices),
+    BADList.
+
+
 
 %==============================================================================
 % CoordList for TestCase0
