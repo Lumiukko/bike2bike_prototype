@@ -32,11 +32,15 @@ bad_loop(MPA, {Lat, Long}, BADList) ->
 		{From, stop} ->
 			io:format("BAD ~p: BAD shutting down~n", [self()]),
 			reply_ok(From);
-		% informing BAD that it is time to ping for new BADs
+		% ENV informing BAD that it is time to ping for new BADs
 		{ENV, time2ping} ->
 			io:format("BAD ~p: Ping broadcast~n", [self()]),
 			reply(ENV, {ping, {Lat, Long}}),
 			bad_loop(MPA, {Lat, Long}, BADList);
+		% ENV informing BAD that it is time to ping for new BADs
+		{setloc, {NewLat, NewLong}} ->
+			io:format("BAD ~p: I am now at a new position~n", [self()]),
+			bad_loop(MPA, {NewLat, NewLong}, BADList);
 		% receiving ping acknowledgement by other BAD
 		{From, {pingACK, {OtherLat, OtherLong}}} ->
 			io:format("BAD ~p: Received ping ACK from ~p~n", [self(),From]),
