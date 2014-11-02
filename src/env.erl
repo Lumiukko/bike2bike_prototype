@@ -22,9 +22,10 @@ start() ->
     ENVID = spawn(fun() -> init() end),
     io:format("ENV: Started with PID: ~p~n", [ENVID]),
     BADList = testcase(ENVID, tc0()),
-    {ChosenBAD, _} = lists:nth(2, BADList),
     % Send accident signal after 12s (enough time to get acquainted with all BADs)
-    timer:apply_after(12000, env, runEvent, [ChosenBAD, accident]),
+    % -- not part of this prototype (limited due to time/cost restrictions)
+    % {ChosenBAD, _} = lists:nth(2, BADList),
+    % timer:apply_after(12000, env, runEvent, [ChosenBAD, accident]),
     ENVID ! {badlist, BADList},
     {ENVID, BADList}.
 
