@@ -78,10 +78,10 @@ loop(BADList, BADLoc) ->
                         Dist = distance(Lat, Long, LatNext, LongNext),
                         case Dist < ?MAX_DIST of
                             true ->             % BAD in range
-                                io:format("BAD ~p in range of ~p (~pm)!~n", [BADID, From, Dist]),
+                                io:format("ENV: BAD ~p in range of ~p (~pm)!~n", [BADID, From, Dist]),
                                 BADID ! {From, {ping, {Lat, Long}}};
                             false ->            % BAD not in range
-                                io:format("BAD ~p *not* in range of ~p (~pm)!~n", [BADID, From, Dist])
+                                io:format("ENV: BAD ~p *not* in range of ~p (~pm)!~n", [BADID, From, Dist])
                         end;
                     false ->
                         donothing % Update happens below
@@ -132,7 +132,7 @@ testcase(ENVID, CoordList) ->
     lists:foreach(fun(Index) ->
         {BADID, _} = lists:nth(Index, BADList),
         Coord = lists:nth(Index, CoordList),
-        io:format("Started BAD ~p with Coords ~p.~n", [BADID, Coord]),
+        io:format("ENV: Started BAD ~p with Coords ~p.~n", [BADID, Coord]),
         BADID ! {setloc, Coord}
     end, Indices),
     BADList.
